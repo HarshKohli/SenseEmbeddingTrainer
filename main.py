@@ -1,5 +1,5 @@
 import yaml
-from sentence_transformers import LoggingHandler, SentenceTransformer
+from sentence_transformers import LoggingHandler, SentenceTransformer, InputExample
 import logging
 import os
 
@@ -16,4 +16,12 @@ train_batch_size = config['batch_size']
 
 model = SentenceTransformer(model_name)
 
-logging.info("Read SemCor train dataset")
+logging.info("Processing SemCor train dataset")
+
+train_samples = []
+train_file = open(config['train_flat_file'], 'r', encoding='utf8')
+for line in train_file.readlines()[1:]:
+    info = line.split('\t')
+    train_samples.append(InputExample(texts=[info[2].strip(), info[3].strip()], label=int(info[1].strip())))
+
+logging.info("Done Processing SemCor train dataset")

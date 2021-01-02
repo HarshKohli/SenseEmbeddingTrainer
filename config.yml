@@ -1,3 +1,4 @@
 base_model: roberta-base-nli-stsb-mean-tokens
 base_model_dir: models/base
 batch_size: 2
+train_flat_file: datasets/training/train_flat.csv
