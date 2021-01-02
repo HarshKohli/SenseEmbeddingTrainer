@@ -1,13 +1,19 @@
-from sentence_transformers import SentenceTransformer
-model = SentenceTransformer('distilbert-base-nli-mean-tokens')
+import yaml
+from sentence_transformers import LoggingHandler, SentenceTransformer
+import logging
+import os
 
-sentences = ['This framework generates embeddings for each input sentence',
-    'Sentences are passed as a list of string.',
-    'The quick brown fox jumps over the lazy dog.']
-sentence_embeddings = model.encode(sentences)
+logging.basicConfig(format='%(asctime)s - %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S',
+                    level=logging.INFO,
+                    handlers=[LoggingHandler()])
 
+config = yaml.safe_load(open('config.yml', 'r'))
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["TORCH_HOME"] = config['base_model_dir']
+model_name = config['base_model']
+train_batch_size = config['batch_size']
 
-for sentence, embedding in zip(sentences, sentence_embeddings):
-    print("Sentence:", sentence)
-    print("Embedding:", embedding)
-    print("")
+model = SentenceTransformer(model_name)
+
+logging.info("Read SemCor train dataset")

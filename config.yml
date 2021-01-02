@@ -1,0 +1,3 @@
+base_model: roberta-base-nli-stsb-mean-tokens
+base_model_dir: models/base
+batch_size: 2
