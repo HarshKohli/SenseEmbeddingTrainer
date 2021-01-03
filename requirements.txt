@@ -1,4 +1,5 @@
 PyYAML
+torch
 numpy===1.19.3
 transformers
 sentence-transformers
