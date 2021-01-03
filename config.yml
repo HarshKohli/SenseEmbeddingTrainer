@@ -5,4 +5,6 @@ train_dir: datasets/train
 train_flat_file: train_flat.csv
 eval_dir: datasets/eval
 dev_file: semeval2007.csv
+warmup_ratio: 0.1
 test_files: [semeval2013.csv, semeval2015.csv, senseval2.csv, senseval3.csv]
+saved_model_dir: model_save
