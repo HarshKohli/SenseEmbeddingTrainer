@@ -6,8 +6,8 @@ import logging
 import os
 from torch.utils.data import DataLoader
 import math
-from sentence_transformers import LoggingHandler, SentenceTransformer, losses, SentencesDataset, evaluation
-from utils import get_train_dev_data
+from sentence_transformers import LoggingHandler, SentenceTransformer, SentencesDataset, evaluation
+from utils import get_train_dev_data, get_loss
 
 logging.basicConfig(format='%(asctime)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S',
@@ -28,13 +28,14 @@ num_epochs = config['num_epochs']
 
 train_dataset = SentencesDataset(train_samples, model)
 train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
-train_loss = losses.CosineSimilarityLoss(model=model)
+train_loss = get_loss(config['loss_type'], model)
 evaluator = evaluation.EmbeddingSimilarityEvaluator.from_input_examples(dev_samples)
 
 warmup_steps = math.ceil(len(train_dataset) * num_epochs / batch_size * float(config['warmup_ratio']))
 logging.info("Warmup-steps: {}".format(warmup_steps))
-model_dir = os.path.join(config['saved_model_dir'])
+model_dir = os.path.join(config['saved_model_dir'], config['loss_type'])
 
+logging.info("Starting training ...")
 model.fit(train_objectives=[(train_dataloader, train_loss)],
           evaluator=evaluator,
           epochs=num_epochs,
