@@ -2,7 +2,17 @@
 # Date created: 1/4/2021
 
 import os
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import InputExample, losses
+
+
+class TestSample:
+    def __init__(self, sentence, definition, pos, label):
+        self.sentence = sentence
+        self.definitions = [definition]
+        self.pos = pos
+        self.labels = [label]
 
 
 def get_file_data(filename):
@@ -19,6 +29,83 @@ def get_train_dev_data(config):
     train_data = get_file_data(os.path.join(config['train_dir'], config['train_flat_file']))
     dev_data = get_file_data(os.path.join(config['eval_dir'], config['dev_file']))
     return train_data, dev_data
+
+
+def get_test_data(filename):
+    test_file = open(filename, 'r', encoding='utf8')
+    test_data = {}
+    for line in test_file.readlines()[1:]:
+        info = line.strip().split('\t')
+        target_id, sentence, definition, label, pos = info[0], info[2], info[3], info[1], info[5]
+        if target_id in test_data:
+            test_data[target_id].definitions.append(definition)
+            test_data[target_id].labels.append(label)
+        else:
+            test_data[target_id] = TestSample(sentence, definition, pos, label)
+    test_file.close()
+    return test_data
+
+
+def compute_test_metrics(test_data, model, batch_size):
+    correct, tot = 0, 0
+    vbp, vbn, nnp, nnn, adjp, adjn, advp, advn = 0, 0, 0, 0, 0, 0, 0, 0
+    for target_id, sample in test_data.items():
+        sentence_embeddings = model.encode(sample.sentence, batch_size=batch_size)
+        definition_embeddings = model.encode(sample.definitions, batch_size=batch_size)
+        similarities = cosine_similarity([sentence_embeddings], definition_embeddings)
+        max_sim_index = np.argmax(similarities)
+        pos = sample.pos
+        if sample.labels[max_sim_index] == '1':
+            correct = correct + 1
+            if pos == 'NOUN':
+                nnp = nnp + 1
+            elif pos == 'VERB':
+                vbp = vbp + 1
+            elif pos == 'ADJ':
+                adjp = adjp + 1
+            elif pos == 'ADV':
+                advp = advp + 1
+            else:
+                raise ValueError('Invalid POS type')
+        else:
+            if pos == 'NOUN':
+                nnn = nnn + 1
+            elif pos == 'VERB':
+                vbn = vbn + 1
+            elif pos == 'ADJ':
+                adjn = adjn + 1
+            elif pos == 'ADV':
+                advn = advn + 1
+            else:
+                raise ValueError('Invalid POS type')
+        tot = tot + 1
+
+    scores_dict = {}
+    if nnn + nnp > 0:
+        scores_dict['NOUN'] = nnp / (nnp + nnn)
+    else:
+        scores_dict['NOUN'] = 0
+    if vbp + vbn > 0:
+        scores_dict['VERB'] = vbp / (vbp + vbn)
+    else:
+        scores_dict['VERB'] = 0
+    if adjp + adjn > 0:
+        scores_dict['ADJ'] = adjp / (adjp + adjn)
+    else:
+        scores_dict['ADJ'] = 0
+    if advp + advn > 0:
+        scores_dict['ADV'] = advp / (advp + advn)
+    else:
+        scores_dict['ADV'] = 0
+
+    return scores_dict
+
+
+def write_scores(filename, scores_dict):
+    results_file = open(filename, 'w', encoding='utf8')
+    for type, score in scores_dict.items():
+        results_file.write(type + '\t' + str(score) + '\n')
+    results_file.close()
 
 
 def get_loss(loss_type, model):
