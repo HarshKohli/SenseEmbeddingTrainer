@@ -53,12 +53,12 @@ def get_test_data(filename):
     for line in test_file.readlines()[1:]:
         info = line.strip().split('\t')
         target_id, sentence, definition, label, pos = info[0], info[2], info[3], info[1], info[5]
-        all_sentences.append(sentence)
         all_definitions.append(definition)
         if target_id in test_data:
             test_data[target_id].definitions.append(definition)
             test_data[target_id].labels.append(label)
         else:
+            all_sentences.append(sentence)
             test_data[target_id] = TestSample(sentence, definition, pos, label)
     test_file.close()
     return test_data, all_sentences, all_definitions
@@ -116,6 +116,7 @@ def compute_test_metrics(test_data):
     else:
         scores_dict['ADV'] = 0
 
+    scores_dict['TOTAL'] = correct / tot
     return scores_dict
 
 
