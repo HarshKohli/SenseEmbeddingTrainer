@@ -155,7 +155,4 @@ def get_loss(loss_type, model):
     if loss_type == 'OnlineContrastiveLoss':
         return losses.OnlineContrastiveLoss(model=model)
 
-    if loss_type == 'TripletLoss':
-        return losses.TripletLoss(model=model)
-
     raise ValueError('Invalid loss type')
