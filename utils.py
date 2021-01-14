@@ -13,6 +13,8 @@ class TestSample:
         self.definitions = [definition]
         self.pos = pos
         self.labels = [label]
+        self.sentence_embeddings = None
+        self.definition_embeddings = None
 
 
 def get_file_data(filename):
@@ -31,27 +33,43 @@ def get_train_dev_data(config):
     return train_data, dev_data
 
 
+def populate_embeddings(test_data, all_sentences, all_definitions, model, batch_size):
+    sentence_embeddings = model.encode(all_sentences, batch_size=batch_size)
+    definition_embeddings = model.encode(all_definitions, batch_size=batch_size)
+    def_ptr = 0
+    for sentence_embed, test_key in zip(sentence_embeddings, test_data):
+        test_datum = test_data[test_key]
+        num_defs = len(test_datum.definitions)
+        def_embeds = definition_embeddings[def_ptr: def_ptr + num_defs]
+        def_ptr = def_ptr + num_defs
+        test_datum.sentence_embeddings = sentence_embed
+        test_datum.definition_embeddings = def_embeds
+
+
 def get_test_data(filename):
     test_file = open(filename, 'r', encoding='utf8')
     test_data = {}
+    all_sentences, all_definitions = [], []
     for line in test_file.readlines()[1:]:
         info = line.strip().split('\t')
         target_id, sentence, definition, label, pos = info[0], info[2], info[3], info[1], info[5]
+        all_sentences.append(sentence)
+        all_definitions.append(definition)
         if target_id in test_data:
             test_data[target_id].definitions.append(definition)
             test_data[target_id].labels.append(label)
         else:
             test_data[target_id] = TestSample(sentence, definition, pos, label)
     test_file.close()
-    return test_data
+    return test_data, all_sentences, all_definitions
 
 
-def compute_test_metrics(test_data, model, batch_size):
+def compute_test_metrics(test_data):
     correct, tot = 0, 0
     vbp, vbn, nnp, nnn, adjp, adjn, advp, advn = 0, 0, 0, 0, 0, 0, 0, 0
     for target_id, sample in test_data.items():
-        sentence_embeddings = model.encode(sample.sentence, batch_size=batch_size)
-        definition_embeddings = model.encode(sample.definitions, batch_size=batch_size)
+        sentence_embeddings = sample.sentence_embeddings
+        definition_embeddings = sample.definition_embeddings
         similarities = cosine_similarity([sentence_embeddings], definition_embeddings)
         max_sim_index = np.argmax(similarities)
         pos = sample.pos
