@@ -21,15 +21,17 @@ os.environ["TORCH_HOME"] = config['base_model_dir']
 
 folder_name = 'CrossEncoder'
 num_labels = 2
-if config['use_hyperynm']:
-    folder_name = folder_name + '_w_hypernym'
-    num_labels = 3
-
-model = CrossEncoder('microsoft/deberta-base', num_labels=3)
 
 logging.info("Processing Data ...")
-train_samples, dev_samples = get_train_dev_data(config)
+if config['use_hyperynm']:
+    folder_name = folder_name + '_w_hypernym'
+    train_samples, dev_samples = get_train_dev_data(config, True)
+    num_labels = 3
+else:
+    train_samples, dev_samples = get_train_dev_data(config, False)
 logging.info("Done Processing Data ...")
+
+model = CrossEncoder(config['crossencoder_base_model'], num_labels=num_labels)
 
 batch_size = config['batch_size']
 num_epochs = config['num_epochs']

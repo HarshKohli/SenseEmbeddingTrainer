@@ -20,7 +20,7 @@ os.environ["TORCH_HOME"] = config['base_model_dir']
 model = SentenceTransformer(config['base_model'])
 
 logging.info("Processing Data ...")
-train_samples, dev_samples = get_train_dev_data(config)
+train_samples, dev_samples = get_train_dev_data(config, False)
 logging.info("Done Processing Data ...")
 
 batch_size = config['batch_size']

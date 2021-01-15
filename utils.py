@@ -29,8 +29,11 @@ def get_file_data(filename):
     return dataset
 
 
-def get_train_dev_data(config):
-    train_data = get_file_data(os.path.join(config['train_dir'], config['train_flat_file']))
+def get_train_dev_data(config, use_hypernym):
+    if use_hypernym:
+        train_data = get_file_data(os.path.join(config['train_dir'], config['train_hyp_file']))
+    else:
+        train_data = get_file_data(os.path.join(config['train_dir'], config['train_flat_file']))
     dev_data = get_file_data(os.path.join(config['eval_dir'], config['dev_file']))
     return train_data, dev_data
 
