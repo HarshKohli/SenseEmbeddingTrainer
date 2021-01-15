@@ -2,7 +2,9 @@
 # Date created: 1/4/2021
 
 import os
+import random
 import numpy as np
+from nltk.corpus import wordnet as wn
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import InputExample, losses
 
@@ -62,6 +64,49 @@ def get_test_data(filename):
             test_data[target_id] = TestSample(sentence, definition, pos, label)
     test_file.close()
     return test_data, all_sentences, all_definitions
+
+
+def create_hypernynm_data(config):
+    train_file = open(os.path.join(config['train_dir'], config['train_flat_file']), 'r', encoding='utf8')
+
+    all_data = []
+    for line in train_file.readlines()[1:]:
+        info = line.strip().split('\t')
+        target_id, label, sentence, gloss, sense_key = info[0], info[1], info[2], info[3], info[4]
+        all_data.append([target_id, label, sentence, gloss, sense_key])
+        if label == '1':
+            for _ in range(5):
+                all_data.append([target_id, label, sentence, gloss, sense_key])
+        try:
+            wn_synset = wn.synset_from_sense_key(sense_key)
+            if len(wn_synset.hypernyms()) > 0:
+                for hyp in wn_synset.hypernyms():
+                    defs = hyp.definition()
+                    word = hyp.lemmas()[0].name().replace('_', ' ')
+                    new_gloss = word + ' : ' + defs
+                    if label == '1':
+                        new_label = '2'
+                    else:
+                        new_label = '0'
+                    all_data.append([target_id, new_label, sentence, new_gloss, sense_key])
+
+                    if label == '1':
+                        for _ in range(7):
+                            all_data.append([target_id, new_label, sentence, new_gloss, sense_key])
+        except:
+            continue
+
+    random.shuffle(all_data)
+    train_file.close()
+    return all_data
+
+
+def write_hypernym_train_file(all_data, config):
+    outfile = open(os.path.join(config['train_dir'], config['train_hyp_file']), 'w', encoding='utf8')
+    outfile.write('target_id\tlabel\tsentence\tgloss\tsense_key\n')
+    for sample in all_data:
+        outfile.write(sample[0] + '\t' + sample[1] + '\t' + sample[2] + '\t' + sample[3] + '\t' + sample[4] + '\n')
+    outfile.close()
 
 
 def compute_test_metrics(test_data):

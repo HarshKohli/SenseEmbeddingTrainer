@@ -1,8 +1,9 @@
 base_model: nli-roberta-base
 base_model_dir: models/base
-batch_size: 64
+batch_size: 2
 train_dir: datasets/train
 train_flat_file: train_flat.csv
+train_hyp_file: train_hyp.csv
 eval_dir: datasets/eval
 dev_file: semeval2007.csv
 warmup_ratio: 0.1
@@ -12,3 +13,4 @@ num_epochs: 5
 eval_steps: 5000
 loss_type: BatchAllTripletLoss
 results_dir: results
+use_hyperynm: True
