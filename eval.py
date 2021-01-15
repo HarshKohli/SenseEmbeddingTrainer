@@ -26,10 +26,10 @@ logging.info("Done Loading Model ...")
 for test_set in test_sets:
     test_name = test_set.split('.')[0]
     logging.info("Reading " + test_name + " Data")
-    test_data, all_sentences, all_definitions = get_test_data(os.path.join(eval_dir, test_set))
+    test_data, all_sentences, all_definitions = get_test_data(os.path.join(eval_dir, test_set), False)
     logging.info("Computing " + test_name + " Embeddings and Writing Scores")
     populate_embeddings(test_data, all_sentences, all_definitions, model, batch_size)
-    scores_dict = compute_test_metrics(test_data)
+    scores_dict = compute_test_metrics(test_data, True)
     out_dir = os.path.join(results_dir, loss_type)
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)

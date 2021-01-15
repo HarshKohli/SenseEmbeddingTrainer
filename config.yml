@@ -1,7 +1,7 @@
 base_model: nli-roberta-base
 crossencoder_base_model: microsoft/deberta-base
 base_model_dir: models/base
-batch_size: 2
+batch_size: 64
 train_dir: datasets/train
 train_flat_file: train_flat.csv
 train_hyp_file: train_hyp.csv
@@ -11,7 +11,7 @@ warmup_ratio: 0.1
 test_files: [all.csv, semeval2007.csv, semeval2013.csv, semeval2015.csv, senseval2.csv, senseval3.csv]
 saved_model_dir: model_save
 num_epochs: 1
-eval_steps: 5
+eval_steps: 2000
 loss_type: ContrastiveLoss
 results_dir: results
 use_hyperynm: True

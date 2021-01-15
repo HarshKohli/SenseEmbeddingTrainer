@@ -5,6 +5,7 @@ import os
 import random
 import numpy as np
 from nltk.corpus import wordnet as wn
+from scipy.special import softmax
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import InputExample, losses
 
@@ -17,6 +18,7 @@ class TestSample:
         self.labels = [label]
         self.sentence_embeddings = None
         self.definition_embeddings = None
+        self.scores = None
 
 
 def get_file_data(filename):
@@ -51,7 +53,17 @@ def populate_embeddings(test_data, all_sentences, all_definitions, model, batch_
         test_datum.definition_embeddings = def_embeds
 
 
-def get_test_data(filename):
+def populate_scores(test_data, scores):
+    def_ptr = 0
+    for test_key, test_datum in test_data.items():
+        test_datum = test_data[test_key]
+        num_defs = len(test_datum.definitions)
+        batch_scores = scores[def_ptr: def_ptr + num_defs]
+        def_ptr = def_ptr + num_defs
+        test_datum.scores = batch_scores
+
+
+def get_test_data(filename, broadcast_sentences):
     test_file = open(filename, 'r', encoding='utf8')
     test_data = {}
     all_sentences, all_definitions = [], []
@@ -59,11 +71,14 @@ def get_test_data(filename):
         info = line.strip().split('\t')
         target_id, sentence, definition, label, pos = info[0], info[2], info[3], info[1], info[5]
         all_definitions.append(definition)
+        if broadcast_sentences:
+            all_sentences.append(sentence)
         if target_id in test_data:
             test_data[target_id].definitions.append(definition)
             test_data[target_id].labels.append(label)
         else:
-            all_sentences.append(sentence)
+            if not broadcast_sentences:
+                all_sentences.append(sentence)
             test_data[target_id] = TestSample(sentence, definition, pos, label)
     test_file.close()
     return test_data, all_sentences, all_definitions
@@ -112,13 +127,16 @@ def write_hypernym_train_file(all_data, config):
     outfile.close()
 
 
-def compute_test_metrics(test_data):
+def compute_test_metrics(test_data, do_cosine):
     correct, tot = 0, 0
     vbp, vbn, nnp, nnn, adjp, adjn, advp, advn = 0, 0, 0, 0, 0, 0, 0, 0
     for target_id, sample in test_data.items():
-        sentence_embeddings = sample.sentence_embeddings
-        definition_embeddings = sample.definition_embeddings
-        similarities = cosine_similarity([sentence_embeddings], definition_embeddings)
+        if do_cosine is True:
+            sentence_embeddings = sample.sentence_embeddings
+            definition_embeddings = sample.definition_embeddings
+            similarities = cosine_similarity([sentence_embeddings], definition_embeddings)
+        else:
+            similarities = sample.scores
         max_sim_index = np.argmax(similarities)
         pos = sample.pos
         if sample.labels[max_sim_index] == '1':
@@ -173,6 +191,22 @@ def write_scores(filename, scores_dict):
     for type, score in scores_dict.items():
         results_file.write(type + '\t' + str(score) + '\n')
     results_file.close()
+
+
+def get_crossencoder_scores(all_sentences, all_definitions, batch_size, model):
+    sentence_batches = [all_sentences[i * batch_size:(i + 1) * batch_size] for i in
+                        range((len(all_sentences) + batch_size - 1) // batch_size)]
+
+    definition_batches = [all_definitions[i * batch_size:(i + 1) * batch_size] for i in
+                          range((len(all_definitions) + batch_size - 1) // batch_size)]
+
+    scores = []
+    for sbatch, dbatch in zip(sentence_batches, definition_batches):
+        scores_raw = model.predict([sbatch, dbatch])
+        scores_normalized = softmax(scores_raw, axis=1)
+        scores_normalized = [score[1] for score in scores_normalized]
+        scores.extend(scores_normalized)
+    return scores
 
 
 def get_loss(loss_type, model):
