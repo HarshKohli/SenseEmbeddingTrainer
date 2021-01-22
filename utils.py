@@ -202,7 +202,10 @@ def get_crossencoder_scores(all_sentences, all_definitions, batch_size, model):
 
     scores = []
     for sbatch, dbatch in zip(sentence_batches, definition_batches):
-        scores_raw = model.predict([sbatch, dbatch])
+        batch = []
+        for a, b in zip(sbatch, dbatch):
+            batch.append([a, b])
+        scores_raw = model.predict(batch)
         scores_normalized = softmax(scores_raw, axis=1)
         scores_normalized = [score[1] for score in scores_normalized]
         scores.extend(scores_normalized)

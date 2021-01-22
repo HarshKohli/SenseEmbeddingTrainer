@@ -1,7 +1,7 @@
 base_model: nli-roberta-base
 crossencoder_base_model: microsoft/deberta-base
 base_model_dir: models/base
-batch_size: 64
+batch_size: 4
 train_dir: datasets/train
 train_flat_file: train_flat.csv
 train_hyp_file: train_hyp.csv
