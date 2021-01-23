@@ -20,7 +20,10 @@ eval_dir = config['eval_dir']
 loss_type = config['loss_type']
 
 logging.info("Loading Model ...")
-model = SentenceTransformer(os.path.join(config['saved_model_dir'], loss_type))
+if config['eval_multi_task']:
+    model = SentenceTransformer(os.path.join(config['saved_model_dir'], config['loss_type']) + '_multi_task')
+else:
+    model = SentenceTransformer(os.path.join(config['saved_model_dir'], loss_type))
 logging.info("Done Loading Model ...")
 
 for test_set in test_sets:

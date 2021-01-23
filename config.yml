@@ -12,7 +12,7 @@ warmup_ratio: 0.1
 test_files: [all.csv, semeval2007.csv, semeval2013.csv, semeval2015.csv, senseval2.csv, senseval3.csv]
 saved_model_dir: model_save
 num_epochs: 1
-eval_steps: 2000
+eval_steps: 10000
 loss_type: ContrastiveLoss
 results_dir: results
 use_hypernym: True
@@ -20,3 +20,4 @@ train_raw_dir: datasets/train/raw
 train_raw_files: [semcor_train_sent_cls_ws.csv, glosses_main_train_sent_cls_ws.csv, examples_train_sent_cls_ws.csv]
 oversample_ratio: 3
 transfer_learn: False
+eval_multi_task: False
