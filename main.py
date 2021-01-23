@@ -19,8 +19,15 @@ os.environ["TORCH_HOME"] = config['base_model_dir']
 
 model = SentenceTransformer(config['base_model'])
 
+model_dir = os.path.join(config['saved_model_dir'], config['loss_type'])
+if config['use_hypernym']:
+    train_file = os.path.join(config['train_dir'], config['train_hyp_file'])
+    model_dir = model_dir + '_hypernym'
+else:
+    train_file = os.path.join(config['train_dir'], config['train_flat_file'])
+
 logging.info("Processing Data ...")
-train_samples, dev_samples = get_train_dev_data(config, False)
+train_samples, dev_samples = get_train_dev_data(config, train_file)
 logging.info("Done Processing Data ...")
 
 batch_size = config['batch_size']
@@ -33,7 +40,6 @@ evaluator = evaluation.EmbeddingSimilarityEvaluator.from_input_examples(dev_samp
 
 warmup_steps = math.ceil(len(train_dataset) * num_epochs / batch_size * float(config['warmup_ratio']))
 logging.info("Warmup-steps: {}".format(warmup_steps))
-model_dir = os.path.join(config['saved_model_dir'], config['loss_type'])
 
 logging.info("Starting training ...")
 model.fit(train_objectives=[(train_dataloader, train_loss)],

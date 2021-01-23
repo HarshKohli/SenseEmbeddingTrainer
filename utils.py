@@ -31,7 +31,8 @@ def get_file_data(filename):
     return dataset
 
 
-def get_train_dev_data(config, use_hypernym):
+def get_train_dev_data(config, train_filepath):
+    train_data = get_file_data(train_filepath)
     if use_hypernym:
         train_data = get_file_data(os.path.join(config['train_dir'], config['train_hyp_file']))
     else:
@@ -84,43 +85,39 @@ def get_test_data(filename, broadcast_sentences):
     return test_data, all_sentences, all_definitions
 
 
-def create_hypernynm_data(config):
-    train_file = open(os.path.join(config['train_dir'], config['train_flat_file']), 'r', encoding='utf8')
+def create_hypernynm_gloss_data(config):
+    train_files = config['train_raw_files']
+    gloss_data, hyp_data = [], []
+    oversample_ratio = config['oversample_ratio']
+    for file in train_files:
+        train_file = open(os.path.join(config['train_raw_dir'], file), 'r', encoding='utf8')
+        for line in train_file.readlines()[1:]:
+            info = line.strip().split('\t')
+            target_id, label, sentence, gloss, sense_key = info[0], info[1], info[2], info[3], info[4]
+            gloss_data.append([target_id, label, sentence, gloss, sense_key])
+            if label == '1':
+                for _ in range(oversample_ratio - 1):
+                    gloss_data.append([target_id, label, sentence, gloss, sense_key])
+            try:
+                wn_synset = wn.synset_from_sense_key(sense_key)
+                if len(wn_synset.hypernyms()) > 0:
+                    for hyp in wn_synset.hypernyms():
+                        defs = hyp.definition()
+                        word = hyp.lemmas()[0].name().replace('_', ' ')
+                        new_gloss = word + ' : ' + defs
+                        hyp_data.append([target_id, label, sentence, new_gloss, sense_key])
+                        if label == '1':
+                            for _ in range(oversample_ratio - 1):
+                                hyp_data.append([target_id, label, sentence, new_gloss, sense_key])
+            except:
+                continue
+        train_file.close()
+    return gloss_data, hyp_data
 
-    all_data = []
-    for line in train_file.readlines()[1:]:
-        info = line.strip().split('\t')
-        target_id, label, sentence, gloss, sense_key = info[0], info[1], info[2], info[3], info[4]
-        all_data.append([target_id, label, sentence, gloss, sense_key])
-        if label == '1':
-            for _ in range(5):
-                all_data.append([target_id, label, sentence, gloss, sense_key])
-        try:
-            wn_synset = wn.synset_from_sense_key(sense_key)
-            if len(wn_synset.hypernyms()) > 0:
-                for hyp in wn_synset.hypernyms():
-                    defs = hyp.definition()
-                    word = hyp.lemmas()[0].name().replace('_', ' ')
-                    new_gloss = word + ' : ' + defs
-                    if label == '1':
-                        new_label = '2'
-                    else:
-                        new_label = '0'
-                    all_data.append([target_id, new_label, sentence, new_gloss, sense_key])
 
-                    if label == '1':
-                        for _ in range(7):
-                            all_data.append([target_id, new_label, sentence, new_gloss, sense_key])
-        except:
-            continue
-
+def write_train_file(all_data, filepath):
     random.shuffle(all_data)
-    train_file.close()
-    return all_data
-
-
-def write_hypernym_train_file(all_data, config):
-    outfile = open(os.path.join(config['train_dir'], config['train_hyp_file']), 'w', encoding='utf8')
+    outfile = open(filepath, 'w', encoding='utf8')
     outfile.write('target_id\tlabel\tsentence\tgloss\tsense_key\n')
     for sample in all_data:
         outfile.write(sample[0] + '\t' + sample[1] + '\t' + sample[2] + '\t' + sample[3] + '\t' + sample[4] + '\n')

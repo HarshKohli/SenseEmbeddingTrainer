@@ -25,10 +25,10 @@ num_labels = 2
 logging.info("Processing Data ...")
 if config['use_hyperynm']:
     folder_name = folder_name + '_w_hypernym'
-    train_samples, dev_samples = get_train_dev_data(config, True)
+    train_samples, dev_samples = get_train_dev_data(config, os.path.join(config['train_dir'], config['train_hyp_file']))
     num_labels = 3
 else:
-    train_samples, dev_samples = get_train_dev_data(config, False)
+    train_samples, dev_samples = get_train_dev_data(config, os.path.join(config['train_dir'], config['train_flat_file']))
 logging.info("Done Processing Data ...")
 
 model = CrossEncoder(config['crossencoder_base_model'], num_labels=num_labels)
