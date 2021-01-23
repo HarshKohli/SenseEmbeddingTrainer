@@ -23,7 +23,7 @@ folder_name = 'CrossEncoder'
 num_labels = 2
 
 logging.info("Processing Data ...")
-if config['use_hyperynm']:
+if config['use_hypernym']:
     folder_name = folder_name + '_w_hypernym'
     train_samples, dev_samples = get_train_dev_data(config, os.path.join(config['train_dir'], config['train_hyp_file']))
     num_labels = 3
