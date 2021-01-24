@@ -1,13 +1,13 @@
 # Author: Harsh Kohli
-# Date created: 1/1/2021
+# Date created: 1/24/2021
 
 import yaml
 import logging
 import os
 from torch.utils.data import DataLoader
 import math
-from sentence_transformers import LoggingHandler, SentenceTransformer, SentencesDataset, evaluation
-from utils import get_train_dev_data, get_loss
+from sentence_transformers import LoggingHandler, SentenceTransformer, SentencesDataset, evaluation, losses
+from utils import get_triplet_data, get_loss
 
 logging.basicConfig(format='%(asctime)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S',
@@ -22,15 +22,11 @@ if config['transfer_learn']:
 else:
     model = SentenceTransformer(config['base_model'])
 
-model_dir = os.path.join(config['saved_model_dir'], config['loss_type'])
-if config['use_hypernym']:
-    train_file = os.path.join(config['train_dir'], config['train_hyp_file'])
-    model_dir = model_dir + '_hypernym'
-else:
-    train_file = os.path.join(config['train_dir'], config['train_flat_file'])
+loss_type = 'TripletLoss'
+model_dir = os.path.join(config['saved_model_dir'], loss_type)
 
 logging.info("Processing Data ...")
-train_samples, dev_samples = get_train_dev_data(config, train_file)
+train_samples, dev_samples = get_triplet_data(config)
 logging.info("Done Processing Data ...")
 
 batch_size = config['batch_size']
@@ -38,7 +34,7 @@ num_epochs = config['num_epochs']
 
 train_dataset = SentencesDataset(train_samples, model)
 train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
-train_loss = get_loss(config['loss_type'], model)
+train_loss = losses.TripletLoss(model=model)
 evaluator = evaluation.EmbeddingSimilarityEvaluator.from_input_examples(dev_samples)
 
 warmup_steps = math.ceil(len(train_dataset) * num_epochs / batch_size * float(config['warmup_ratio']))

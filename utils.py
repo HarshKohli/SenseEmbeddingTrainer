@@ -21,6 +21,13 @@ class TestSample:
         self.scores = None
 
 
+class TripletSample:
+    def __init__(self, anchor):
+        self.anchor = anchor
+        self.positives = set()
+        self.negatives = set()
+
+
 def get_file_data(filename):
     dataset = []
     data_file = open(filename, 'r', encoding='utf8')
@@ -35,6 +42,18 @@ def get_train_dev_data(config, train_filepath):
     train_data = get_file_data(train_filepath)
     dev_data = get_file_data(os.path.join(config['eval_dir'], config['dev_file']))
     return train_data, dev_data
+
+
+def get_triplet_data(config):
+    dev_data = get_file_data(os.path.join(config['eval_dir'], config['dev_file']))
+    train_file = open(os.path.join(config['train_dir'], config['train_triplet_file']))
+    train_dataset = []
+    for line in train_file.readlines():
+        info = line.strip().split('\t')
+        anchor, positive, negative = info[0], info[1], info[2]
+        train_dataset.append(InputExample(texts=[anchor, positive, negative]))
+    train_file.close()
+    return train_dataset, dev_data
 
 
 def populate_embeddings(test_data, all_sentences, all_definitions, model, batch_size):
@@ -85,12 +104,22 @@ def create_hypernynm_gloss_data(config):
     train_files = config['train_raw_files']
     gloss_data, hyp_data = [], []
     oversample_ratio = config['oversample_ratio']
+    triplet_data = {}
     for file in train_files:
         train_file = open(os.path.join(config['train_raw_dir'], file), 'r', encoding='utf8')
         for line in train_file.readlines()[1:]:
             info = line.strip().split('\t')
             target_id, label, sentence, gloss, sense_key = info[0], info[1], info[2], info[3], info[4]
             gloss_data.append([target_id, label, sentence, gloss, sense_key])
+            if sentence in triplet_data:
+                triplet_obj = triplet_data[sentence]
+            else:
+                triplet_obj = TripletSample(sentence)
+                triplet_data[sentence] = triplet_obj
+            if label == '1':
+                triplet_obj.positives.add(gloss)
+            else:
+                triplet_obj.negatives.add(gloss)
             if label == '1':
                 for _ in range(oversample_ratio - 1):
                     gloss_data.append([target_id, label, sentence, gloss, sense_key])
@@ -108,7 +137,7 @@ def create_hypernynm_gloss_data(config):
             except:
                 continue
         train_file.close()
-    return gloss_data, hyp_data
+    return gloss_data, hyp_data, triplet_data
 
 
 def write_train_file(all_data, filepath):
@@ -117,6 +146,18 @@ def write_train_file(all_data, filepath):
     outfile.write('target_id\tlabel\tsentence\tgloss\tsense_key\n')
     for sample in all_data:
         outfile.write(sample[0] + '\t' + sample[1] + '\t' + sample[2] + '\t' + sample[3] + '\t' + sample[4] + '\n')
+    outfile.close()
+
+
+def write_triplet_train_file(triplet_data, filepath):
+    outfile = open(filepath, 'w', encoding='utf8')
+    for _, triplet_obj in triplet_data.items():
+        anchor = triplet_obj.anchor
+        positives = triplet_obj.positives
+        negatives = triplet_obj.negatives
+        for pos in positives:
+            for neg in negatives:
+                outfile.write(anchor + '\t' + pos + '\t' + neg + '\n')
     outfile.close()
 
 
