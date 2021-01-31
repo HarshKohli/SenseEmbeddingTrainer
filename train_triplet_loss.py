@@ -23,7 +23,7 @@ else:
     model = SentenceTransformer(config['base_model'])
 
 loss_type = 'TripletLoss'
-model_dir = os.path.join(config['saved_model_dir'], loss_type)
+model_dir = os.path.join(config['saved_model_dir'], config['checkpoint_path'])
 
 logging.info("Processing Data ...")
 train_samples, dev_samples = get_triplet_data(config)

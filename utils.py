@@ -56,15 +56,31 @@ def get_triplet_data(config):
     return train_dataset, dev_data
 
 
-def populate_embeddings(test_data, all_sentences, all_definitions, model, batch_size):
+def populate_embeddings(test_data, all_sentences, all_definitions, model, batch_size, embedding_lookup,
+                        embedding_lookup_all, config):
     sentence_embeddings = model.encode(all_sentences, batch_size=batch_size)
     definition_embeddings = model.encode(all_definitions, batch_size=batch_size)
     def_ptr = 0
     for sentence_embed, test_key in zip(sentence_embeddings, test_data):
         test_datum = test_data[test_key]
-        num_defs = len(test_datum.definitions)
-        def_embeds = definition_embeddings[def_ptr: def_ptr + num_defs]
-        def_ptr = def_ptr + num_defs
+        def_embeds = []
+        for definition in test_datum.definitions:
+            if config['eval_strategy'] == 'Centroid':
+                if definition in embedding_lookup:
+                    def_embeds.append(embedding_lookup[definition])
+                else:
+                    def_embeds.append(definition_embeddings[def_ptr])
+            if config['eval_strategy'] == 'MaxSim':
+                if definition in embedding_lookup_all:
+                    all_embeds = embedding_lookup_all[definition]
+                    similarities = cosine_similarity([sentence_embed], all_embeds)
+                    max_sim_index = np.argmax(similarities)
+                    def_embeds.append(all_embeds[max_sim_index])
+                else:
+                    def_embeds.append(definition_embeddings[def_ptr])
+            else:
+                def_embeds.append(definition_embeddings[def_ptr])
+            def_ptr = def_ptr + 1
         test_datum.sentence_embeddings = sentence_embed
         test_datum.definition_embeddings = def_embeds
 
@@ -161,6 +177,35 @@ def write_triplet_train_file(triplet_data, filepath):
     outfile.close()
 
 
+def get_sense_samples(train_file):
+    file = open(train_file, 'r', encoding='utf8')
+    def_sentences_map = {}
+    for line in file.readlines()[1:]:
+        info = line.strip().split('\t')
+        label, sentence, gloss = info[1], info[2], info[3]
+        if label == '1':
+            if gloss not in def_sentences_map:
+                def_sentences_map[gloss] = set()
+            def_sentences_map[gloss].add(sentence)
+            def_sentences_map[gloss].add(gloss)
+    return def_sentences_map
+
+
+def compute_sense_clusters(def_sentences_map, batch_size, embedding_lookup, embedding_lookup_all, model):
+    all_sentences = []
+    for _, sentences in def_sentences_map.items():
+        all_sentences.extend(sentences)
+    sentence_embeddings = model.encode(all_sentences, batch_size=batch_size)
+    sentence_ptr = 0
+    for definition, sentences in def_sentences_map.items():
+        num_defs = len(sentences)
+        embeddings = sentence_embeddings[sentence_ptr: sentence_ptr + num_defs]
+        def_embed = np.mean(embeddings, axis=0)
+        embedding_lookup[definition] = def_embed
+        embedding_lookup_all[definition] = embeddings
+        sentence_ptr = sentence_ptr + num_defs
+
+
 def compute_test_metrics(test_data, do_cosine):
     correct, tot = 0, 0
     vbp, vbn, nnp, nnn, adjp, adjn, advp, advn = 0, 0, 0, 0, 0, 0, 0, 0
@@ -197,7 +242,6 @@ def compute_test_metrics(test_data, do_cosine):
             else:
                 raise ValueError('Invalid POS type')
         tot = tot + 1
-
     scores_dict = {}
     if nnn + nnp > 0:
         scores_dict['NOUN'] = nnp / (nnp + nnn)

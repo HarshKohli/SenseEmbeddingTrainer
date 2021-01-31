@@ -19,12 +19,10 @@ logging.basicConfig(format='%(asctime)s - %(message)s',
 config = yaml.safe_load(open('config.yml', 'r'))
 os.environ["TORCH_HOME"] = config['base_model_dir']
 
-folder_name = 'CrossEncoder'
 num_labels = 2
 
 logging.info("Processing Data ...")
 if config['use_hypernym']:
-    folder_name = folder_name + '_w_hypernym'
     train_samples, dev_samples = get_train_dev_data(config, os.path.join(config['train_dir'], config['train_hyp_file']))
     num_labels = 3
 else:
@@ -43,7 +41,7 @@ evaluator = CEBinaryAccuracyEvaluator.from_input_examples(dev_samples)
 warmup_steps = math.ceil(len(train_dataloader) * num_epochs * 0.1)
 logging.info("Warmup-steps: {}".format(warmup_steps))
 
-model_dir = os.path.join(config['saved_model_dir'], folder_name)
+model_dir = os.path.join(config['saved_model_dir'], config['checkpoint_path'])
 
 logging.info("Starting training ...")
 model.fit(train_dataloader=train_dataloader,

@@ -17,15 +17,14 @@ logging.basicConfig(format='%(asctime)s - %(message)s',
 config = yaml.safe_load(open('config.yml', 'r'))
 os.environ["TORCH_HOME"] = config['base_model_dir']
 
+model_dir = os.path.join(config['saved_model_dir'], config['checkpoint_path'])
 if config['transfer_learn']:
     model = SentenceTransformer(os.path.join(config['saved_model_dir'], config['transfer_learn_base']))
 else:
     model = SentenceTransformer(config['base_model'])
 
-model_dir = os.path.join(config['saved_model_dir'], config['loss_type'])
 if config['use_hypernym']:
     train_file = os.path.join(config['train_dir'], config['train_hyp_file'])
-    model_dir = model_dir + '_hypernym'
 else:
     train_file = os.path.join(config['train_dir'], config['train_flat_file'])
 

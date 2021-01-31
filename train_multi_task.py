@@ -18,7 +18,7 @@ config = yaml.safe_load(open('config.yml', 'r'))
 os.environ["TORCH_HOME"] = config['base_model_dir']
 model = SentenceTransformer(config['base_model'])
 
-model_dir = os.path.join(config['saved_model_dir'], config['loss_type']) + '_multi_task'
+model_dir = os.path.join(config['saved_model_dir'], config['checkpoint_path'])
 gloss_train_file = os.path.join(config['train_dir'], config['train_hyp_file'])
 hyp_train_file = os.path.join(config['train_dir'], config['train_flat_file'])
 

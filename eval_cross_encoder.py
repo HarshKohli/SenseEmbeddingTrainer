@@ -15,12 +15,9 @@ logging.basicConfig(format='%(asctime)s - %(message)s',
 
 config = yaml.safe_load(open('config.yml', 'r'))
 
-folder_name = 'CrossEncoder'
 num_labels = 2
 if config['use_hyperynm']:
-    folder_name = folder_name + '_w_hypernym'
     num_labels = 3
-model_dir = os.path.join(config['saved_model_dir'], folder_name)
 
 test_sets = config['test_files']
 batch_size = config['batch_size']
@@ -28,7 +25,7 @@ results_dir = config['results_dir']
 eval_dir = config['eval_dir']
 
 logging.info("Loading Model ...")
-model = CrossEncoder(os.path.join(config['saved_model_dir'], folder_name), num_labels=num_labels)
+model = CrossEncoder(os.path.join(config['saved_model_dir'], config['eval_base']), num_labels=num_labels)
 logging.info("Done Loading Model ...")
 
 for test_set in test_sets:
@@ -39,7 +36,7 @@ for test_set in test_sets:
     scores = get_crossencoder_scores(all_sentences, all_definitions, batch_size, model)
     populate_scores(test_data, scores)
     scores_dict = compute_test_metrics(test_data, False)
-    out_dir = os.path.join(results_dir, folder_name)
+    out_dir = os.path.join(results_dir, config['eval_base'])
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
     out_file = os.path.join(out_dir, test_name + '_results.csv')
