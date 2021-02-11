@@ -45,6 +45,26 @@ config.yml contains various configuration elements, dataset paths, and other hyp
 
 In order to test the best model, set eval_base = Hypernym_plus_Triplet (default) and run eval.py . Hypernym_plus_Triplet must be present in the model_save directory and results are written in results/ folder
 
+## Retraining for the best model
+
+1. set transfer_learn: False and use_hypernym: True in config . Then run main.py (might take over 24 hours to train, depending on hardware)
+
+2. set transfer_learn: True, use_hypernym: False and transfer_learn_base: Hypernym in config. Run train_triplet_loss.py (again, might take over 1 day)
+
+Run eval.py to verify results
+
+The pretrained Hypernym model is available, so you can directly skip to step 2. described above.
+
+## Testing other configurations
+
+train_multi_task.py to pre-train on multi-task dataset
+
+Available loss types (can be configured using the loss_type flag in config.yml) are - [BatchAllTripletLoss, BatchHardSoftMarginTripletLoss, BatchHardTripletLoss, BatchSemiHardTripletLoss, ContrastiveLoss, CosineSimilarityLoss, MegaBatchMarginLoss, MultipleNegativesRankingLoss, OnlineContrastiveLoss]
+
+For fine-tuning on any previously saved model, set transfer_learn: True and transfer_learn_base must point to the pretrained model directory in models/
+
+
+
 
 
 

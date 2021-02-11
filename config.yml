@@ -12,7 +12,7 @@ dev_file: semeval2007.csv
 warmup_ratio: 0.1
 test_files: [all.csv, semeval2007.csv, semeval2013.csv, semeval2015.csv, senseval2.csv, senseval3.csv]
 saved_model_dir: model_save
-num_epochs: 1
+num_epochs: 2
 eval_steps: 10000
 loss_type: TripletLoss
 results_dir: results
