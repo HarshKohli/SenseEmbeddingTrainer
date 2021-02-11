@@ -11,11 +11,12 @@ from sentence_transformers import InputExample, losses
 
 
 class TestSample:
-    def __init__(self, sentence, definition, pos, label):
+    def __init__(self, sentence, definition, pos, label, skey):
         self.sentence = sentence
         self.definitions = [definition]
         self.pos = pos
         self.labels = [label]
+        self.skeys = [skey]
         self.sentence_embeddings = None
         self.definition_embeddings = None
         self.scores = None
@@ -101,17 +102,18 @@ def get_test_data(filename, broadcast_sentences):
     all_sentences, all_definitions = [], []
     for line in test_file.readlines()[1:]:
         info = line.strip().split('\t')
-        target_id, sentence, definition, label, pos = info[0], info[2], info[3], info[1], info[5]
+        target_id, sentence, definition, label, pos, skey = info[0], info[2], info[3], info[1], info[5], info[4]
         all_definitions.append(definition)
         if broadcast_sentences:
             all_sentences.append(sentence)
         if target_id in test_data:
             test_data[target_id].definitions.append(definition)
             test_data[target_id].labels.append(label)
+            test_data[target_id].skeys.append(skey)
         else:
             if not broadcast_sentences:
                 all_sentences.append(sentence)
-            test_data[target_id] = TestSample(sentence, definition, pos, label)
+            test_data[target_id] = TestSample(sentence, definition, pos, label, skey)
     test_file.close()
     return test_data, all_sentences, all_definitions
 
@@ -206,9 +208,10 @@ def compute_sense_clusters(def_sentences_map, batch_size, embedding_lookup, embe
         sentence_ptr = sentence_ptr + num_defs
 
 
-def compute_test_metrics(test_data, do_cosine):
+def compute_test_metrics(test_data, do_cosine, semcor_keys = None):
     correct, tot = 0, 0
     vbp, vbn, nnp, nnn, adjp, adjn, advp, advn = 0, 0, 0, 0, 0, 0, 0, 0
+    in_semcor_correct, in_semcor_wrong, out_semcor_correct, out_semcor_wrong = 0, 0, 0, 0
     for target_id, sample in test_data.items():
         if do_cosine is True:
             sentence_embeddings = sample.sentence_embeddings
@@ -219,6 +222,11 @@ def compute_test_metrics(test_data, do_cosine):
         max_sim_index = np.argmax(similarities)
         pos = sample.pos
         if sample.labels[max_sim_index] == '1':
+            if semcor_keys is not None:
+                if sample.skeys[max_sim_index] in semcor_keys:
+                    in_semcor_correct = in_semcor_correct + 1
+                else:
+                    out_semcor_correct = out_semcor_correct + 1
             correct = correct + 1
             if pos == 'NOUN':
                 nnp = nnp + 1
@@ -231,6 +239,12 @@ def compute_test_metrics(test_data, do_cosine):
             else:
                 raise ValueError('Invalid POS type')
         else:
+            ans_index = sample.labels.index('1')
+            if semcor_keys is not None:
+                if sample.skeys[ans_index] in semcor_keys:
+                    in_semcor_wrong = in_semcor_wrong + 1
+                else:
+                    out_semcor_wrong = out_semcor_wrong + 1
             if pos == 'NOUN':
                 nnn = nnn + 1
             elif pos == 'VERB':
@@ -261,6 +275,12 @@ def compute_test_metrics(test_data, do_cosine):
         scores_dict['ADV'] = 0
 
     scores_dict['TOTAL'] = correct / tot
+    if semcor_keys is not None:
+        print(in_semcor_correct)
+        print(in_semcor_wrong)
+        print(out_semcor_correct)
+        print(out_semcor_wrong)
+
     return scores_dict
 
 

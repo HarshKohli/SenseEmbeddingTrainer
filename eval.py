@@ -27,9 +27,15 @@ embedding_lookup = {}
 embedding_lookup_all = {}
 if config['eval_strategy'] == 'Centroid' or config['eval_strategy'] == 'MaxSim':
     logging.info("Computing Sense Centroids ...")
-    train_file = os.path.join(config['train_dir'], config['train_hyp_file'])
+    train_file = os.path.join(config['train_dir'], config['train_flat_file'])
     def_sentences_map = get_sense_samples(train_file)
     compute_sense_clusters(def_sentences_map, batch_size, embedding_lookup, embedding_lookup_all, model)
+
+key_file = open(config['keys_file'], 'r', encoding='utf8')
+semcor_keys = set()
+for line in key_file:
+    skey = line.strip()
+    semcor_keys.add(skey)
 
 for test_set in test_sets:
     test_name = test_set.split('.')[0]
@@ -37,7 +43,7 @@ for test_set in test_sets:
     test_data, all_sentences, all_definitions = get_test_data(os.path.join(eval_dir, test_set), False)
     logging.info("Computing " + test_name + " Embeddings and Writing Scores")
     populate_embeddings(test_data, all_sentences, all_definitions, model, batch_size, embedding_lookup, embedding_lookup_all, config)
-    scores_dict = compute_test_metrics(test_data, True)
+    scores_dict = compute_test_metrics(test_data, True, semcor_keys)
     out_dir = os.path.join(results_dir, config['eval_base'])
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
