@@ -7,7 +7,7 @@ import os
 from torch.utils.data import DataLoader
 import math
 from sentence_transformers import LoggingHandler, SentenceTransformer, SentencesDataset, evaluation, losses
-from utils import get_triplet_data, get_loss
+from utils import get_triplet_data
 
 logging.basicConfig(format='%(asctime)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S',
