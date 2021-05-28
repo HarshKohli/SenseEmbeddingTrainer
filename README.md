@@ -7,7 +7,7 @@ Optimization Experiments for Word Sense Disambiguation
 
 ### Download train and eval datasets - raw as well as preprocessed from :-
 
-https://drive.google.com/file/d/1SnOVlBrpCWFCwqlB4Cw6qOpQ07L_RF9v/view?usp=sharing
+https://drive.google.com/file/d/14yQliqnOTNVW5xZqWJxZALz3gSXnBitX/view?usp=sharing
 
 Unzip the contents and copy to the datasets/ directory
 
@@ -17,9 +17,9 @@ https://drive.google.com/drive/folders/1XdNDXcMDU9hhDe8tarUBzd-yA7q_AO_c?usp=sha
 
 Copy the contents to the model_save/ directory
 
-### Results files can be downlaoded from :-
+### Results files can be downloaded from :-
 
-https://drive.google.com/drive/folders/1QohJaYBY5dGrPuzmJ7x9rFwI4nrNaVfI?usp=sharing
+https://drive.google.com/drive/folders/1d2ozj253Mr2jaRFIk78c6xHE8Y8uTQ_a?usp=sharing
 
 For each model type, the results are as follows-
 
